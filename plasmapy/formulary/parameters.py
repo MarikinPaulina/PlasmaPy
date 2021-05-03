@@ -1194,21 +1194,23 @@ def gyroradius(
 
     # check 1: ensure either Vperp or T_i invalid, keeping in mind that
     # the underlying values of the astropy quantity may be numpy arrays
-    if np.any(np.logical_not(np.logical_xor(isfinite_Vperp, isfinite_Ti))):
+    if np.any(np.logical_and(isfinite_Vperp, isfinite_Ti)):
         raise ValueError(
             "Must give Vperp or T_i, but not both, as arguments to gyroradius"
         )
 
+    isscalar_Vperp = np.isscalar(Vperp.value)
+    isscalar_Ti = np.isscalar(T_i.value)
+
     # check 2: get Vperp as the thermal speed if is not already a valid input
-    if np.isscalar(Vperp.value) and np.isscalar(
-        T_i.value
-    ):  # both T_i and Vperp are scalars
-        # we know exactly one of them is nan from check 1
+    if isscalar_Vperp and isscalar_Ti:
+        # both T_i and Vperp are scalars
+        # we know at least one of them is nan from check 1
         if isfinite_Ti:
             # T_i is valid, so use it to determine Vperp
             Vperp = thermal_speed(T_i, particle=particle)
         # else: Vperp is already valid, do nothing
-    elif np.isscalar(Vperp.value):  # only T_i is an array
+    elif isscalar_Vperp:  # only T_i is an array
         # this means either Vperp must be nan, or T_i must be array of all nan,
         # or else we couldn't have gotten through check 1
         if isfinite_Vperp:
@@ -1218,7 +1220,7 @@ def gyroradius(
         else:
             # normal case where Vperp is scalar nan and T_i is valid array
             Vperp = thermal_speed(T_i, particle=particle)
-    elif np.isscalar(T_i.value):  # only Vperp is an array
+    elif isscalar_Ti:  # only Vperp is an array
         # this means either T_i must be nan, or V_perp must be array of all nan,
         # or else we couldn't have gotten through check 1
         if isfinite_Ti:
@@ -1228,7 +1230,8 @@ def gyroradius(
         # else: normal case where T_i is scalar nan and Vperp is already a valid array
         # so, do nothing
     else:  # both T_i and Vperp are arrays
-        # we know all the elementwise combinations have one nan and one finite, due to check 1
+        # we know all the elementwise combinations
+        # have two nans or one nan and one finite, due to check 1
         # use the valid Vperps, and replace the others with those calculated from T_i
         Vperp = Vperp.copy()  # avoid changing Vperp's value outside function
         Vperp[isfinite_Ti] = thermal_speed(T_i[isfinite_Ti], particle=particle)

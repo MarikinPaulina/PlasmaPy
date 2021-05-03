@@ -894,6 +894,10 @@ def test_gyroradius():
     with pytest.raises(ValueError):
         gyroradius(1.1 * u.T, particle="p", Vperp=1 * u.m / u.s, T_i=1.2 * u.K)
 
+    assert np.isnan(
+        gyroradius(1.1 * u.T, particle="p", Vperp=np.nan * u.m / u.s, T_i=np.nan * u.K)
+    )
+
     with pytest.raises(u.UnitTypeError):
         gyroradius(1.1 * u.T, particle="p", Vperp=1.1 * u.m, T_i=1.2 * u.K)
 
